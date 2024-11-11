@@ -1,0 +1,46 @@
+# Node.js dependencies
+node_modules/
+
+# Output directories
+out/
+dist/
+
+# Compiled JavaScript and TypeScript files
+*.js
+*.jsx
+*.tsbuildinfo
+
+# Webpack cache and temporary files
+.webpack/
+
+# TypeScript specific
+*.tsbuildinfo
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# VS Code settings (optional - keep if you want to share settings)
+.vscode/
+
+# Ignore package-lock.json or yarn.lock if you don't want them in source control
+# Uncomment one if you're using npm or yarn
+# package-lock.json
+# yarn.lock
+
+# Environment files (if you use .env for secrets)
+.env
+.env.*
+
+# Optional: coverage reports
+coverage/
+
+# Optional: eslint cache
+.eslintcache
