@@ -34,17 +34,22 @@ max_execution_time="$3"
 # max_execution_time=10
 echo "Executing $completion_file"
 error_output=$(mktemp)
-start_time=$(date +%s%N)
+start_sec=$(date +%s)
+start_nsec=$(date +%N)
 rm -f "$completion_dat_file"
-timeout "$max_execution_time" mprof run --interval 0.001 --output "$completion_dat_file" "$completion_file" 2> "$error_output"
-end_time=$(date +%s%N)
-execution_time=$(( (end_time - start_time) / 1000000 ))
+gtimeout "$max_execution_time" mprof run --interval 0.1 --output "$completion_dat_file" "$completion_file" 2> "$error_output"
+end_sec=$(date +%s)
+end_nsec=$(date +%N)
+execution_time=$(( (end_sec - start_sec) * 1000 + (end_nsec - start_nsec) / 1000000 ))
 exit_status=$?
 
 # Check execution status
 echo "Execution status: $exit_status"
 if [ $exit_status -ne 0 ] || [ -s "$error_output" ]; then
-    echo "Execution failed or errors were reported for $completion_file. Removing .dat file."
+    echo "Execution failed or errors were reported for $completion_file."
+    echo "Error output:"
+    cat "$error_output"
+    echo "Removing .dat file due to errors."
     rm -f "$completion_dat_file"
 elif [ -f "$completion_dat_file" ]; then
     mem_usage_mb_s=$(calculate_memory_usage "$completion_dat_file")

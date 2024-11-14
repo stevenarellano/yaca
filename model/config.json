@@ -2,7 +2,7 @@
 	"raw_code_dataset": "data/raw_hpc_instruct_cpp.parquet",
 	"training_data_path": "data/training_data.json",
 	"adapters_to_eval_paths": [
-		"adapters/adapter_5_no_negatives.pth",
-		"adapters/adapter_5_negatives.pth"
+		"adapters/adapter_10_lr0.01_negatives.pth",
+		"adapters/adapter_10_lr0.01_no_negatives.pth"
 	]
 }

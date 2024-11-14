@@ -1,5 +1,3 @@
-# Few-shot examples for code performance
-
 code_example_1 = """
 performant code:    
 void processLargeData(const std::vector<int>& data) {

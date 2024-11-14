@@ -1,6 +1,6 @@
+from openai import OpenAI
 import json
 import openai
-import argparse
 import os
 import json
 from tqdm import tqdm
@@ -9,14 +9,11 @@ import openai
 from concurrent.futures import ThreadPoolExecutor
 import concurrent.futures
 
-with open("./dataset/dataset.json", "r") as f:
+from dotenv import load_dotenv
+load_dotenv()
+
+with open("../data/dataset.json", "r") as f:
     dataset = json.load(f)
-
-
-
-# Setting API parameters
-openai.api_base = "https://api.aiohub.org/v1"
-openai.api_key = 'API_KEY'
 
 text = """Please based on the task description and the provided code to write test case generator to generate test cases for the following task. 
 You should must follow the following rules:
@@ -93,28 +90,30 @@ if __name__ == "__main__":
 """
 
 
-# Function to fetch completion
-def fetch_completion(data_entry, model):
+def fetch_completion(openai: OpenAI, data_entry, model):
     try:
-        completions = openai.ChatCompletion.create(
+        completions = openai.chat.completions.create(
             model=model,
-            stream=False,
             messages=[
                 {"role": "system", "content": "You are a code developer."},
-                {"role": "user", "content": text + "\n# Task description:\n```python\n" + data_entry["description"]+"\n```\n# Code:\n```python\n"+data_entry["canonical_solution"]+"\n```"},
+                {"role": "user", "content": text + "\n# Task description:\n```python\n" +
+                    data_entry["description"]+"\n```\n# Code:\n```python\n"+data_entry["canonical_solution"]+"\n```"},
             ],
-            request_timeout=100,
         )
-        data_entry["small_test_case_generator"] = completions.choices[0]["message"]["content"]
+
+        data_entry["small_test_case_generator"] = completions.choices[0].message.content
     except Exception as e:
         print(repr(e))
         data_entry["small_test_case_generator"] = ""
     return data_entry
 
+
 if __name__ == "__main__":
-    model = "gpt-3.5-turbo"
-    with ThreadPoolExecutor(max_workers=100) as executor:
-        future_to_entry = {executor.submit(fetch_completion, copy.deepcopy(entry), model): entry for entry in tqdm(dataset)}
+    model = "gpt-4o-mini"
+    openai = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+    with ThreadPoolExecutor(max_workers=5) as executor:
+        future_to_entry = {executor.submit(fetch_completion, openai, copy.deepcopy(
+            entry), model): entry for entry in tqdm(dataset)}
         for future in tqdm(concurrent.futures.as_completed(future_to_entry)):
             entry = future_to_entry[future]
             try:
@@ -123,5 +122,5 @@ if __name__ == "__main__":
                 dataset[idx] = updated_entry
             except Exception as e:
                 print(repr(e))
-    with open("./dataset/leetcode_with_test_generator.json", "w") as f:
+    with open("./data/leetcode_with_test_generator.json", "w") as f:
         json.dump(dataset, f, indent=4)

@@ -1,6 +1,0 @@
-# Code Corpus
-
-## Alternatives
-
--   CodeSearchNet
--   

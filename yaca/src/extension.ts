@@ -1,10 +1,7 @@
 import * as vscode from 'vscode';
 
 import { resetApiKey } from './api';
-import {
-	generateCompletion,
-	generateCompletionWithContext,
-} from './generation';
+import { generateCompletion, generateCompletionWithChat } from './generation';
 
 export async function activate(context: vscode.ExtensionContext) {
 	console.log('Congratulations, your extension "yaca" is now active!');
@@ -24,8 +21,8 @@ export async function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(completionDisposable);
 
 	const contextCompletionDisposable = vscode.commands.registerCommand(
-		'yaca.generateCompletionWithContext',
-		() => generateCompletionWithContext(context.secrets),
+		'yaca.generateCompletionWithChat',
+		() => generateCompletionWithChat(context.secrets),
 	);
 	context.subscriptions.push(contextCompletionDisposable);
 

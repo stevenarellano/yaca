@@ -1,8 +1,4 @@
 secret.json
-adapters/**/*
 
 **/chromadb
-
-data
-
 **/*.pyc

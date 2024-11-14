@@ -1,9 +1,6 @@
 import * as assert from 'assert';
 import * as vscode from 'vscode';
-import {
-	generateCompletion,
-	generateCompletionWithContext,
-} from '../extension';
+import { generateCompletion, generateCompletionWithChat } from '../generation';
 
 suite('Extension Test Suite', () => {
 	vscode.window.showInformationMessage('Start all tests.');
@@ -52,7 +49,7 @@ suite('Extension Test Suite', () => {
 			.getConfiguration()
 			.get('secretStorage') as vscode.SecretStorage | undefined;
 		if (secretStorage) {
-			await generateCompletionWithContext(secretStorage);
+			await generateCompletionWithChat(secretStorage);
 		} else {
 			throw new Error('SecretStorage is not defined.');
 		}
