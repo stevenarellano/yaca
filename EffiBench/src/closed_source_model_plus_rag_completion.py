@@ -16,14 +16,16 @@ import argparse
 import os
 from dotenv import load_dotenv
 
+RAG_CONTEXT_COUNT = 3
+ADAPTER_FOLDER_PATH = '../../model/adapters/'
+CORPUS_DATA_PATH = '../../model/data/cpp_python/corpus_data.json'
+COLLECTION_NAME = "cpp_python"
 
 load_dotenv()
 openai.api_key = os.getenv('OPENAI_API_KEY')
 
 with open("../prompts/prompt.txt", "r") as f:
     text = f.read()
-
-RAG_CONTEXT_COUNT = 1
 
 
 def retrieve_context(
@@ -107,12 +109,13 @@ def setup_and_add_chunks_to_chromadb(embedding_corpus, path="chromadb"):
     collection_list = client.list_collections()
     collection_names = [col.name for col in collection_list]
 
-    if "paper_collection" in collection_names:
-        collection = client.get_collection("paper_collection")
-        print("Collection 'paper_collection' already exists. Skipping chunk addition.")
+    if COLLECTION_NAME in collection_names:
+        collection = client.get_collection(COLLECTION_NAME)
+        print(
+            f"Collection '{COLLECTION_NAME}' already exists. Skipping chunk addition.")
     else:
         collection = client.create_collection(
-            "paper_collection", metadata={"hnsw:space": "cosine"})
+            COLLECTION_NAME, metadata={"hnsw:space": "cosine"})
 
         def add_chunk(chunk, index):
             collection.add(documents=[chunk], ids=[f"chunk_{index}"])
@@ -150,19 +153,18 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description='Fetch completions using OpenAI API.')
     parser.add_argument('--model', type=str, default='gpt-4o-mini',
-                        help='Model name to use for completion')
+                        help='Model name to use for completion')  # any openai model
     parser.add_argument('--embeddings_adapter', type=str,
-                        default='adapter_10_lr0.01_no_negatives',)
+                        default='cpp_adapter_10_lr0.01_no_negatives',)  # adapters can be found in <ROOT>/model/adapters/
     args = parser.parse_args()
     model = args.model
-    ADAPTER_FILE = args.embeddings_adapter
+    adapter_name = args.embeddings_adapter
 
     with open("../data/dataset.json", "r") as f:
         dataset = json.load(f)
 
     base_model = SentenceTransformer('all-MiniLM-L6-v2')
 
-    CORPUS_DATA_PATH = '../../model/data/training_data.json'
     training_data = load_data(CORPUS_DATA_PATH)
     train_data, val_data = train_test_split(
         training_data, test_size=0.3, random_state=42)
@@ -171,9 +173,9 @@ if __name__ == "__main__":
     collection = setup_and_add_chunks_to_chromadb(train_data + val_data)
 
     adapter = LinearAdapter(base_model.get_sentence_embedding_dimension())
-    ADAPTER_FOLDER_PATH = '../../model/adapters/'
+
     adapter.load_state_dict(torch.load(
-        ADAPTER_FOLDER_PATH + ADAPTER_FILE + '.pth')['adapter'])
+        ADAPTER_FOLDER_PATH + adapter_name + '.pth')['adapter'])
 
     with ThreadPoolExecutor(max_workers=5) as executor:
         future_to_entry = {
@@ -190,5 +192,5 @@ if __name__ == "__main__":
                 print(repr(e))
 
     os.makedirs("./results/", exist_ok=True)
-    with open(f"./results/rag{RAG_CONTEXT_COUNT}_and_{model}.json", "w") as f:
+    with open(f"./results/rag{RAG_CONTEXT_COUNT}_{adapter_name}_{model}.json", "w") as f:
         json.dump(dataset, f, indent=4)

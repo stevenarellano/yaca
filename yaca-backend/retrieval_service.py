@@ -6,13 +6,12 @@ from sklearn.model_selection import train_test_split
 from tqdm import tqdm
 from concurrent.futures import ThreadPoolExecutor
 
-COLLECTION_NAME = "hpc_collection"
-
 
 class RetrievalService:
     def __init__(
             self,
             json_data_path: str = "../../model/data/training_data.json",
+            collection_name: str = "default",
             chromadb_path: str = "chromadb",
             base_model: Any = None,
             adapter: Optional[Any] = None
@@ -20,7 +19,7 @@ class RetrievalService:
         self.base_model = base_model
         self.adapter = adapter
         self.collection = self.setup_and_add_chunks_to_chromadb(
-            json_data_path=json_data_path, chromadb_path=chromadb_path)
+            json_data_path=json_data_path, chromadb_path=chromadb_path, collection_name=collection_name)
 
     @staticmethod
     def load_data(file_path: str) -> List[dict]:
@@ -31,7 +30,8 @@ class RetrievalService:
     def setup_and_add_chunks_to_chromadb(
             self,
             json_data_path,
-            chromadb_path
+            chromadb_path,
+            collection_name
     ) -> chromadb.Collection:
         logging.getLogger("chromadb").setLevel(logging.WARNING)
 
@@ -45,17 +45,18 @@ class RetrievalService:
         collection_list = client.list_collections()
         collection_names = [col.name for col in collection_list]
 
-        if COLLECTION_NAME in collection_names:
-            collection = client.get_collection(COLLECTION_NAME)
+        if collection_name in collection_names:
+            collection = client.get_collection(collection_name)
         else:
             collection = client.create_collection(
-                COLLECTION_NAME, metadata={"hnsw:space": "cosine"}
+                collection_name, metadata={"hnsw:space": "cosine"}
             )
 
             def add_chunk(chunk, index) -> None:
                 collection.add(documents=[chunk], ids=[f"chunk_{index}"])
 
-            with ThreadPoolExecutor(max_workers=25) as executor, tqdm(total=len(embedding_corpus), desc="Adding chunks") as pbar:
+            with ThreadPoolExecutor(max_workers=25) as executor, tqdm(
+                    total=len(embedding_corpus), desc="Adding chunks") as pbar:
                 futures = [
                     executor.submit(add_chunk, chunk['solution'], i)
                     for i, chunk in enumerate(embedding_corpus)

@@ -37,4 +37,4 @@ pip3 install -r requirements.txt
 
 `README.md`: This file contains the high-level overview of the repository.
 
-`FINDINGS.md`: This file contains general findings of the research done in the repository. At some point, I will create a proper paper for this research containing greater context and detail into the work done.
+[`FINDINGS.md`](./FINDINGS.md): This file contains general findings of the research done in the repository. At some point, I will create a proper paper for this research containing greater context and detail into the work done.

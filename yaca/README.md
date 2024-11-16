@@ -1,6 +1,6 @@
 # yaca
 
-Yaca is a code assistant for C++ developers. It provides performant code completions for Visual Studio Code users. It offers two primary uses: code completions and code completions with chat.
+Yaca is a code assistant for developers, providing performant and efficient code completions for Visual Studio Code users. It offers two primary uses: code completions and code completions with chat.
 
 ## Running Yaca
 

@@ -8,8 +8,9 @@ from retrieval_service import RetrievalService
 from generation_service import GenerationService
 from linear_adapter import LinearAdapter
 
-CORPUS_DATA_PATH = './data/training_data.json'
+CORPUS_DATA_PATH = './data/cpp_python_corpus_data.json'
 ADAPTER_FILE = './adapters/adapter_10_lr0.01_no_negatives.pth'
+COLLECTION_NAME = 'cpp_python'
 
 
 class YacaBackend:
@@ -22,13 +23,13 @@ class YacaBackend:
             base_model.get_sentence_embedding_dimension())
         adapter.load_state_dict(torch.load(ADAPTER_FILE)['adapter'])
 
-        self.retrieval_service = RetrievalService(
-            json_data_path=CORPUS_DATA_PATH,
-            base_model=base_model,
-            adapter=adapter
-        )
         self.generation_service = GenerationService(
-            self.retrieval_service,
+            retrieval_service=RetrievalService(
+                json_data_path=CORPUS_DATA_PATH,
+                base_model=base_model,
+                adapter=adapter,
+                collection_name=COLLECTION_NAME
+            )
         )
 
         self.setup_routes()

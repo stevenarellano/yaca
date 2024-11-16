@@ -2,7 +2,7 @@
 
 Yaca-Backend is the server-side component of the code assistant Yaca. Its responsible for providing code completions to the Visual Studio Code extension. This backend utilizes a RAG pipeline to generate highly performance code for the user's query.
 
-It uses a custom C++ corpus based on highly performant code from the [hpcgroup/hpc-instruct](https://huggingface.co/datasets/hpcgroup/hpc-instruct) dataset. Further details can be found in the `<ROOT>/model` directory.
+It uses a custom C++ and Python corpus based on highly performant code from the [hpcgroup/hpc-instruct](https://huggingface.co/datasets/hpcgroup/hpc-instruct) dataset. Further details can be found in the `<ROOT>/model` directory.
 
 ## Architecture
 
@@ -17,7 +17,7 @@ The Yaca-Backend is structured as a Flask application, providing a lightweight a
     - **Step 2**: These embeddings, combined with a carefully crafted prompt, are sent to the GPT model.
     - **Step 3**: GPT generates code completions that align with both the query and the context provided by the retrieved embeddings.
 
-This approach provides efficient and contextually aware code completions, making Yaca-Backend a powerful tool for C++ code assistance.
+This approach provides efficient and contextually aware code completions, making Yaca-Backend a powerful tool for code assistance.
 
 ## Installation and Use
 
