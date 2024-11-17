@@ -2,6 +2,10 @@
 
 Yaca is a coding assessment Visual Studio Code extension that helps you write faster code and learn new programming concepts. It is specially designed to help you provide code completions for highly performant code. Yaca is built on top of a RAG pipeline that uses a fine-tuned embeddings model trained for a corpus on highly performant code.
 
+![Yaca Thumbnail](./assets/thumbnail.png)
+
+See the demo video [here](https://www.loom.com/share/5dea1ba9e8eb4ae18ea4914afa1e7ac4?sid=8d33ce42-b439-444f-b793-3df85db06891).
+
 To create this code assistant, the following steps were taken:
 
 1. Train a custom embeddings model on a corpus of highly performant code.

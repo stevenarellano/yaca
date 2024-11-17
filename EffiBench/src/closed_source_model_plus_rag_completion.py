@@ -1,25 +1,26 @@
+import logging
+from concurrent.futures import ThreadPoolExecutor
+from tqdm import tqdm
+import chromadb
 from torch import nn
 from typing import Any, List, Optional
-import chromadb
-import logging
 import json
 import openai
 from sentence_transformers import SentenceTransformer
 from sklearn.model_selection import train_test_split
 import torch
-from tqdm import tqdm
 import copy
-from concurrent.futures import ThreadPoolExecutor
 import concurrent.futures
 import time
 import argparse
 import os
 from dotenv import load_dotenv
 
-RAG_CONTEXT_COUNT = 3
+RAG_CONTEXT_COUNTS = [1, 2, 3]
 ADAPTER_FOLDER_PATH = '../../model/adapters/'
-CORPUS_DATA_PATH = '../../model/data/cpp_python/corpus_data.json'
-COLLECTION_NAME = "cpp_python"
+CORPUS_DATA_PATH = '../../model/data/cpp/corpus_data.json'
+CORPUS_SOLUTION_PLUS_PROBLEM = True
+COLLECTION_NAME = "cpp" if CORPUS_SOLUTION_PLUS_PROBLEM else "cpp_full"
 
 load_dotenv()
 openai.api_key = os.getenv('OPENAI_API_KEY')
@@ -74,6 +75,7 @@ def fetch_completion(data_entry, model, base_model=None, collection=None, adapte
         data_entry['markdown_description'], base_model, collection, k=RAG_CONTEXT_COUNT, adapter=adapter)
     rag_as_string = "\n".join(rag_context)
     while True:
+        retries = 0
         try:
             completions = openai.chat.completions.create(
                 model=model,
@@ -94,14 +96,14 @@ def fetch_completion(data_entry, model, base_model=None, collection=None, adapte
             if data_entry["completion"]:
                 break
         except Exception as e:
-            print(f"[ERROR] fetch_completion attempt {retries + 1}: {repr(e)}")
+            print(f"[ERROR] fetch_completion attempt {retries + 1}: {e}")
             time.sleep(10)
             retries += 1
             data_entry["completion"] = ""
     return data_entry
 
 
-def setup_and_add_chunks_to_chromadb(embedding_corpus, path="chromadb"):
+def setup_and_add_chunks_to_chromadb(embedding_corpus, path="chromadb", add_context_to_completion=False):
     logging.getLogger("chromadb").setLevel(logging.WARNING)
 
     client = chromadb.PersistentClient(path=path)
@@ -118,18 +120,22 @@ def setup_and_add_chunks_to_chromadb(embedding_corpus, path="chromadb"):
             COLLECTION_NAME, metadata={"hnsw:space": "cosine"})
 
         def add_chunk(chunk, index):
-            collection.add(documents=[chunk], ids=[f"chunk_{index}"])
+            if add_context_to_completion:
+                content = f"{chunk['problem']} {chunk['solution']}"
+            else:
+                content = chunk['solution']
+            collection.add(documents=[content], ids=[f"chunk_{index}"])
 
         with ThreadPoolExecutor(max_workers=25) as executor, tqdm(total=len(embedding_corpus), desc="Adding chunks") as pbar:
             futures = [
-                executor.submit(add_chunk, chunk['solution'], i)
+                executor.submit(add_chunk, chunk, i)
                 for i, chunk in enumerate(embedding_corpus)
             ]
             for future in futures:
                 future.result()
                 pbar.update(1)
 
-        print("All chunks have been added to the collection.")
+        print("All valid chunks have been added to the collection.")
 
     return collection
 
@@ -170,27 +176,30 @@ if __name__ == "__main__":
         training_data, test_size=0.3, random_state=42)
 
     print("Adding data chunks to a ChromaDB collection...")
-    collection = setup_and_add_chunks_to_chromadb(train_data + val_data)
+    collection = setup_and_add_chunks_to_chromadb(
+        train_data + val_data, add_context_to_completion=CORPUS_SOLUTION_PLUS_PROBLEM)
 
     adapter = LinearAdapter(base_model.get_sentence_embedding_dimension())
 
     adapter.load_state_dict(torch.load(
         ADAPTER_FOLDER_PATH + adapter_name + '.pth')['adapter'])
 
-    with ThreadPoolExecutor(max_workers=5) as executor:
-        future_to_entry = {
-            executor.submit(fetch_completion, copy.deepcopy(entry), model, base_model, collection, adapter): entry
-            for entry in tqdm(dataset)
-        }
-        for future in tqdm(concurrent.futures.as_completed(future_to_entry)):
-            entry = future_to_entry[future]
-            try:
-                updated_entry = future.result()
-                idx = dataset.index(entry)
-                dataset[idx] = updated_entry
-            except Exception as e:
-                print(repr(e))
+    for RAG_CONTEXT_COUNT in RAG_CONTEXT_COUNTS:
+        with ThreadPoolExecutor(max_workers=5) as executor:
+            future_to_entry = {
+                executor.submit(fetch_completion, copy.deepcopy(entry), model, base_model, collection, adapter): entry
+                for entry in tqdm(dataset)
+            }
+            for future in tqdm(concurrent.futures.as_completed(future_to_entry)):
+                entry = future_to_entry[future]
+                try:
+                    updated_entry = future.result()
+                    idx = dataset.index(entry)
+                    dataset[idx] = updated_entry
+                except Exception as e:
+                    print(repr(e))
 
-    os.makedirs("./results/", exist_ok=True)
-    with open(f"./results/rag{RAG_CONTEXT_COUNT}_{adapter_name}_{model}.json", "w") as f:
-        json.dump(dataset, f, indent=4)
+        os.makedirs("./results/", exist_ok=True)
+        prefix = "full_" if CORPUS_SOLUTION_PLUS_PROBLEM else ""
+        with open(f"./results/{prefix}rag{RAG_CONTEXT_COUNT}_{adapter_name}_{model}.json", "w") as f:
+            json.dump(dataset, f, indent=4)

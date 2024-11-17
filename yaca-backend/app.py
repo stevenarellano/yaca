@@ -9,7 +9,7 @@ from generation_service import GenerationService
 from linear_adapter import LinearAdapter
 
 CORPUS_DATA_PATH = './data/cpp_python_corpus_data.json'
-ADAPTER_FILE = './adapters/adapter_10_lr0.01_no_negatives.pth'
+ADAPTER_FILE = './adapters/adapter_cpp_10_lr0.01_no_negatives.pth'
 COLLECTION_NAME = 'cpp_python'
 
 

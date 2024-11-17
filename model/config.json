@@ -1,8 +1,8 @@
 {
-	"raw_code_dataset": "data/cpp_python/raw_hpc_instruct.parquet",
-	"training_data_path": "data/cpp_python/corpus_data.json",
+	"raw_code_dataset": "data/python/raw_hpc_instruct.parquet",
+	"training_data_path": "data/python/corpus_data.json",
 	"adapters_to_eval_paths": [
-		"adapters/adapter_cpp_python_10_lr0.01_negatives.pth",
-		"adapters/adapter_cpp_python_10_lr0.01_no_negatives.pth"
+		"adapters/adapter_python_10_lr0.01_negatives.pth",
+		"adapters/adapter_python_10_lr0.01_no_negatives.pth"
 	]
 }
